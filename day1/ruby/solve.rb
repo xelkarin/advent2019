@@ -11,7 +11,7 @@ class FuelCalc
     when File
       @datafile = data
     else
-      raise TypeError, 'Expected a File or path name (String)'
+      raise TypeError, 'Expected a path name (String) or File'
     end
   end
 
