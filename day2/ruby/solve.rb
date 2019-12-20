@@ -3,27 +3,31 @@
 
 DATA = File.join([File.dirname(__FILE__), '..', 'data', 'input.txt']).freeze
 
-class Intcode
+class CPU
   ADD  = 1
   MULT = 2
   HALT = 99
 
   def initialize(program)
+    case program
+    when String
+      @data = read_file(File.open(program, 'r'))
+    when File
+      @data = read_file(program)
+    when Array
+      @data = program
+    else
+      raise TypeError, 'Expected a path name (String), File, or Array of Integers'
+    end
+    reset
+  end
+
+  def reset
     @pc = 0
     @r1 = 0
     @r2 = 0
     @ds = 0
-
-    case program
-    when String
-      @mem = read_file(File.open(program, 'r'))
-    when File
-      @mem = read_file(program)
-    when Array
-      @mem = program
-    else
-      raise TypeError, 'Expected a path name (String), File, or Array of Integers'
-    end
+    @mem = @data.clone
   end
 
   def run
@@ -60,7 +64,27 @@ class Intcode
   end
 end
 
-cpu = Intcode.new(DATA)
+cpu = CPU.new(DATA)
 cpu.patch(0x01, 0x0c)
 cpu.patch(0x02, 0x02)
-puts "Intcode return value: #{cpu.run}"
+puts "CPU return value input 1202: #{cpu.run}"
+
+count = 0
+result = 0
+catch :break do
+  range = (0..99)
+  range.each do |noun|
+    range.each do |verb|
+      count += 1
+      cpu.reset
+      cpu.patch(0x01, noun)
+      cpu.patch(0x02, verb)
+      if cpu.run == 19690720
+        result = 100 * noun + verb
+        throw :break
+      end
+    end
+  end
+end
+
+puts "CPU input for 19690720: #{result}, discovered after #{count} iterations."
