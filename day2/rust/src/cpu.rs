@@ -1,5 +1,7 @@
 use std::fmt;
 
+type ExpectResult = (usize, usize);
+
 #[derive(Eq,PartialEq)]
 enum OpCode {
     Add  = 1,
@@ -7,19 +9,30 @@ enum OpCode {
     Halt = 99
 }
 
-pub struct Intcode<'a> {
+pub struct CPU {
     pc: usize,
     r1: usize,
     r2: usize,
     ds: usize,
-    mem: &'a mut [usize]
+    mem: Vec<usize>,
+    data: Vec<usize>
 }
 
-impl<'a> Intcode<'a> {
-    pub fn new(data: &'a mut [usize]) -> Intcode {
-        Intcode { pc: 0, r1: 0, r2: 0, ds: 0, mem: data }
+impl CPU {
+    pub fn new(data: Vec<usize>) -> CPU {
+        CPU { pc: 0, r1: 0, r2: 0, ds: 0, mem: data.clone(), data: data }
     }
 
+    #[inline]
+    pub fn reset(&mut self) {
+        self.pc = 0;
+        self.r1 = 0;
+        self.r2 = 0;
+        self.ds = 0;
+        self.mem = self.data.clone();
+    }
+
+    #[inline]
     pub fn patch(&mut self, addr: usize, value: usize) {
         self.mem[addr] = value;
     }
@@ -27,6 +40,21 @@ impl<'a> Intcode<'a> {
     pub fn run(&mut self) -> usize {
         while OpCode::from(self.mem[self.pc]) != OpCode::Halt { Self::exec(self); }
         self.mem[0]
+    }
+
+    pub fn run_expect(&mut self, value: usize) -> Option<ExpectResult> {
+        let range = 0..=99;
+        for noun in range.clone() {
+            for verb in range.clone() {
+                self.reset();
+                self.patch(0x01, noun);
+                self.patch(0x02, verb);
+                if self.run() == value {
+                    return Some((noun, verb));
+                }
+            }
+        }
+        None
     }
 
     fn exec(&mut self) {
@@ -45,6 +73,7 @@ impl<'a> Intcode<'a> {
         }
     }
 
+    #[inline]
     fn load_operands(&mut self) {
         self.pc += 1; self.r1 = self.mem[self.pc];
         self.pc += 1; self.r2 = self.mem[self.pc];
@@ -64,9 +93,9 @@ impl From<usize> for OpCode {
     }
 }
 
-impl fmt::Debug for Intcode<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Intcode {{ pc: {}, r1: {}, r2: {}, ds: {} }}",
+impl fmt::Debug for CPU {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CPU {{ pc: {}, r1: {}, r2: {}, ds: {} }}",
                self.pc, self.r1, self.r2, self.ds)
     }
 }

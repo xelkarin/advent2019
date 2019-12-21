@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 DATA = File.join([File.dirname(__FILE__), '..', 'data', 'input.txt']).freeze
+CPU_RESULT = 19690720
 
 class CPU
   ADD  = 1
@@ -33,6 +34,18 @@ class CPU
   def run
     while @mem[@pc] != HALT do; exec; end
     @mem[0]
+  end
+
+  def run_expect(value)
+    range = (0..99)
+    range.each do |noun|
+      range.each do |verb|
+        reset
+        patch(0x01, noun)
+        patch(0x02, verb)
+        return [noun, verb] if run == value
+      end
+    end
   end
 
   def patch(addr, value)
@@ -67,24 +80,8 @@ end
 cpu = CPU.new(DATA)
 cpu.patch(0x01, 0x0c)
 cpu.patch(0x02, 0x02)
-puts "CPU return value input 1202: #{cpu.run}"
+puts "CPU return value for input 1202: #{cpu.run}"
 
-count = 0
-result = 0
-catch :break do
-  range = (0..99)
-  range.each do |noun|
-    range.each do |verb|
-      count += 1
-      cpu.reset
-      cpu.patch(0x01, noun)
-      cpu.patch(0x02, verb)
-      if cpu.run == 19690720
-        result = 100 * noun + verb
-        throw :break
-      end
-    end
-  end
-end
-
-puts "CPU input for 19690720: #{result}, discovered after #{count} iterations."
+noun, verb = cpu.run_expect(CPU_RESULT)
+input = 100 * noun + verb
+puts "CPU input for #{CPU_RESULT}: #{input}."
