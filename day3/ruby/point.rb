@@ -18,7 +18,7 @@ class Point
   end
 
   #
-  # Calculate Manhatten distance between Points
+  # Calculate Manhattan distance between Points
   #
   def -(other)
     (x - other.x).abs + (y - other.y).abs

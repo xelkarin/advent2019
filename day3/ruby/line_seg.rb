@@ -7,6 +7,22 @@ class LineSeg
     find_intersection(self, other)
   end
 
+  # Check if a point resides on a Horizontal or Vertical line segment.
+  def contains(point)
+    if p1.x == p2.x && p1.x == point.x
+      y1, y2 = [p1.y, p2.y].sort
+      return y1 <= point.y && point.y <= y2
+    elsif p1.y == p2.y && p1.y == point.y
+      x1, x2 = [p1.x, p2.x].sort
+      return x1 <= point.x && point.x <= x2
+    end
+    false
+  end
+
+  def length
+    self[1] - self[0]
+  end
+
   private
 
   def find_intersection(l1, l2)

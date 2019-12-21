@@ -30,6 +30,25 @@ class Wire
     ipoints
   end
 
+  def steps(points)
+    distance = 0
+    points_distance = []
+
+    points.each do |point|
+      lines.each do |line|
+        if line.contains(point)
+          distance += point - line[0]
+          points_distance.push([point, distance])
+          distance = 0
+          break
+        else
+          distance += line.length
+        end
+      end
+    end
+    points_distance.sort { |p1, p2| p1[1] <=> p2[1] }
+  end
+
   private
 
   def calc_line_segs
