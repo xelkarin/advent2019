@@ -22,13 +22,20 @@ class << data = DATA.dup
   end
 
   def same_adjacent?(password)
+    cnt = 0
     current = 0
-    password.digits.reverse.each do |d|
-      return true if current == d
+    seqs = []
 
+    password.digits.each do |d|
+      if current != d
+        seqs.push(cnt)
+        cnt = 0
+      end
+      cnt += 1
       current = d
     end
-    false
+    seqs.push(cnt)
+    seqs.include?(2)
   end
 end
 
