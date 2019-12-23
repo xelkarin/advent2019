@@ -1,8 +1,5 @@
 [package]
-name = "solve"
+name = "intcode"
 version = "0.1.0"
 authors = ["Robert Gill <locke@sdf.lonestar.org>"]
 edition = "2018"
-
-[dependencies]
-intcode = { path = "../../lib/rust/intcode" }

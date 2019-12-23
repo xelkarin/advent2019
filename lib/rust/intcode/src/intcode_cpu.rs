@@ -9,7 +9,7 @@ enum OpCode {
     Halt = 99
 }
 
-pub struct CPU {
+pub struct IntcodeCPU {
     pc: usize,
     r1: usize,
     r2: usize,
@@ -18,9 +18,9 @@ pub struct CPU {
     data: Vec<usize>
 }
 
-impl CPU {
-    pub fn new(data: Vec<usize>) -> CPU {
-        CPU { pc: 0, r1: 0, r2: 0, ds: 0, mem: data.clone(), data: data }
+impl IntcodeCPU {
+    pub fn new(data: Vec<usize>) -> IntcodeCPU {
+        IntcodeCPU { pc: 0, r1: 0, r2: 0, ds: 0, mem: data.clone(), data: data }
     }
 
     #[inline]
@@ -93,9 +93,9 @@ impl From<usize> for OpCode {
     }
 }
 
-impl fmt::Debug for CPU {
+impl fmt::Debug for IntcodeCPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "CPU {{ pc: {}, r1: {}, r2: {}, ds: {} }}",
+        write!(f, "IntcodeCPU {{ pc: {}, r1: {}, r2: {}, ds: {} }}",
                self.pc, self.r1, self.r2, self.ds)
     }
 }
