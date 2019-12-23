@@ -6,6 +6,10 @@ class OpCode
   MULT = 2
   IN   = 3
   OUT  = 4
+  JNZ  = 5
+  JZ   = 6
+  STOL = 7
+  STOE = 8
   HALT = 99
 
   attr_accessor :opcode, :operands, :modes, :size
@@ -16,12 +20,16 @@ class OpCode
     @operands = read_operands(mem, ip, @size - 1) if size > 1
   end
 
-  def exec(mem)
+  def exec(ip, mem)
     case self
-    when ADD  then add_op(mem)
-    when MULT then mult_op(mem)
-    when IN   then input(mem)
-    when OUT  then output(mem)
+    when ADD  then add_op(ip, mem)
+    when MULT then mult_op(ip, mem)
+    when IN   then input(ip, mem)
+    when OUT  then output(ip, mem)
+    when JNZ  then jump_if_true(ip, mem)
+    when JZ   then jump_if_false(ip, mem)
+    when STOL then store_if_less(ip, mem)
+    when STOE then store_if_equal(ip, mem)
     end
   end
 
@@ -65,9 +73,11 @@ class OpCode
 
   def op_size(code)
     case code
-    when ADD, MULT then 4
-    when IN, OUT   then 2
-    when HALT      then 1
+    when ADD, MULT,
+         STOL, STOE then 4
+    when JZ, JNZ    then 3
+    when IN, OUT    then 2
+    when HALT       then 1
     end
   end
 
@@ -75,26 +85,54 @@ class OpCode
     mem[ip + 1, size]
   end
 
-  def add_op(mem)
+  def add_op(ip, mem)
     modes[2] = :imm
-    o1, o2, ds = load_operands(mem)
-    mem[ds] = o1 + o2
+    val1, val2, addr = load_operands(mem)
+    mem[addr] = val1 + val2
+    ip + size
   end
 
-  def mult_op(mem)
+  def mult_op(ip, mem)
     modes[2] = :imm
-    o1, o2, ds = load_operands(mem)
-    mem[ds] = o1 * o2
+    val1, val2, addr = load_operands(mem)
+    mem[addr] = val1 * val2
+    ip + size
   end
 
-  def input(mem)
+  def input(ip, mem)
     print '? '
-    value = scanf('%d').first
-    mem[operands[0]] = value
+    val = scanf('%d').first
+    mem[operands[0]] = val
+    ip + size
   end
 
-  def output(mem)
+  def output(ip, mem)
     puts load_operands(mem)
+    ip + size
+  end
+
+  def jump_if_true(ip, mem)
+    val, addr = load_operands(mem)
+    val.zero? ? ip + size : addr
+  end
+
+  def jump_if_false(ip, mem)
+    val, addr = load_operands(mem)
+    val.zero? ? addr : ip + size
+  end
+
+  def store_if_less(ip, mem)
+    modes[2] = :imm
+    val1, val2, addr = load_operands(mem)
+    mem[addr] = val1 < val2 ? 1 : 0
+    ip + size
+  end
+
+  def store_if_equal(ip, mem)
+    modes[2] = :imm
+    val1, val2, addr = load_operands(mem)
+    mem[addr] = val1 == val2 ? 1 : 0
+    ip + size
   end
 
   def load_operands(mem)
