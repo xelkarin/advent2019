@@ -15,21 +15,24 @@ class OpCode
   attr_accessor :opcode, :operands, :modes, :size
 
   def initialize(ip, mem)
-    @opcode, @modes = deconstruct_opcode(mem[ip])
+    @ip = ip
+    @mem = mem
+
+    @opcode, @modes = deconstruct_opcode(@mem[@ip])
     @size = op_size(@opcode)
-    @operands = read_operands(mem, ip, @size - 1) if size > 1
+    @operands = read_operands(@size - 1) if size > 1
   end
 
-  def exec(ip, mem)
+  def exec
     case self
-    when ADD  then add_op(ip, mem)
-    when MULT then mult_op(ip, mem)
-    when IN   then input(ip, mem)
-    when OUT  then output(ip, mem)
-    when JNZ  then jump_if_true(ip, mem)
-    when JZ   then jump_if_false(ip, mem)
-    when STOL then store_if_less(ip, mem)
-    when STOE then store_if_equal(ip, mem)
+    when ADD  then add_op
+    when MULT then mult_op
+    when IN   then input
+    when OUT  then output
+    when JNZ  then jump_if_true
+    when JZ   then jump_if_false
+    when STOL then store_if_less
+    when STOE then store_if_equal
     end
   end
 
@@ -81,63 +84,63 @@ class OpCode
     end
   end
 
-  def read_operands(mem, ip, size)
-    mem[ip + 1, size]
+  def read_operands(size)
+    @mem[@ip + 1, size]
   end
 
-  def add_op(ip, mem)
+  def add_op
     modes[2] = :imm
-    val1, val2, addr = load_operands(mem)
-    mem[addr] = val1 + val2
-    ip + size
+    val1, val2, addr = load_operands
+    @mem[addr] = val1 + val2
+    @ip + size
   end
 
-  def mult_op(ip, mem)
+  def mult_op
     modes[2] = :imm
-    val1, val2, addr = load_operands(mem)
-    mem[addr] = val1 * val2
-    ip + size
+    val1, val2, addr = load_operands
+    @mem[addr] = val1 * val2
+    @ip + size
   end
 
-  def input(ip, mem)
+  def input
     print '? '
     val = scanf('%d').first
-    mem[operands[0]] = val
-    ip + size
+    @mem[operands[0]] = val
+    @ip + size
   end
 
-  def output(ip, mem)
-    puts load_operands(mem)
-    ip + size
+  def output
+    puts load_operands
+    @ip + size
   end
 
-  def jump_if_true(ip, mem)
-    val, addr = load_operands(mem)
-    val.zero? ? ip + size : addr
+  def jump_if_true
+    val, addr = load_operands
+    val.zero? ? @ip + size : addr
   end
 
-  def jump_if_false(ip, mem)
-    val, addr = load_operands(mem)
-    val.zero? ? addr : ip + size
+  def jump_if_false
+    val, addr = load_operands
+    val.zero? ? addr : @ip + size
   end
 
-  def store_if_less(ip, mem)
+  def store_if_less
     modes[2] = :imm
-    val1, val2, addr = load_operands(mem)
-    mem[addr] = val1 < val2 ? 1 : 0
-    ip + size
+    val1, val2, addr = load_operands
+    @mem[addr] = val1 < val2 ? 1 : 0
+    @ip + size
   end
 
-  def store_if_equal(ip, mem)
+  def store_if_equal
     modes[2] = :imm
-    val1, val2, addr = load_operands(mem)
-    mem[addr] = val1 == val2 ? 1 : 0
-    ip + size
+    val1, val2, addr = load_operands
+    @mem[addr] = val1 == val2 ? 1 : 0
+    @ip + size
   end
 
-  def load_operands(mem)
+  def load_operands
     operands.zip(modes).collect do |val, mode|
-      mode == :mem ? mem[val] : val
+      mode == :mem ? @mem[val] : val
     end
   end
 end

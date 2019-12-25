@@ -49,6 +49,6 @@ class IntcodeCPU
 
   def exec
     opcode = OpCode.new(@ip, @mem)
-    @ip = opcode.exec(@ip, @mem)
+    @ip = opcode.exec
   end
 end
