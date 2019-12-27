@@ -1,48 +1,65 @@
+use std::fs::File;
+use std::io::BufReader;
+use std::path::{Path,PathBuf};
+use std::io::prelude::*;
+
+use std::env;
 use std::fmt;
 
-type ExpectResult = (usize, usize);
+use crate::op_code::{Mneumonic,OpCode};
 
-#[derive(Eq,PartialEq)]
-enum OpCode {
-    Add  = 1,
-    Mult = 2,
-    Halt = 99
-}
+type ExpectResult = (isize, isize);
 
 pub struct IntcodeCPU {
-    pc: usize,
-    r1: usize,
-    r2: usize,
-    ds: usize,
-    mem: Vec<usize>,
-    data: Vec<usize>
+    ip: usize,
+    mem: Vec<isize>,
+    data: Vec<isize>
 }
 
 impl IntcodeCPU {
-    pub fn new(data: Vec<usize>) -> IntcodeCPU {
-        IntcodeCPU { pc: 0, r1: 0, r2: 0, ds: 0, mem: data.clone(), data: data }
+    pub fn new(data: Vec<isize>) -> IntcodeCPU {
+        IntcodeCPU { ip: 0, mem: data.clone(), data: data }
+    }
+
+    pub fn read_data(datapath: &str) -> IntcodeCPU {
+        let arg0 = env::args().next().unwrap();
+        let exepath = Path::new(&arg0).parent().unwrap();
+        let datapath: PathBuf =
+            [ exepath.to_str().unwrap(), datapath ].iter().collect();
+
+        let file = File::open(datapath).unwrap();
+        let mut reader = BufReader::new(file);
+        let mut s = String::new();
+        reader.read_to_string(&mut s).unwrap();
+
+        let data = s.trim().split(',')
+            .map(|v| v.parse::<isize>().unwrap())
+            .collect();
+
+        IntcodeCPU::new(data)
     }
 
     #[inline]
     pub fn reset(&mut self) {
-        self.pc = 0;
-        self.r1 = 0;
-        self.r2 = 0;
-        self.ds = 0;
+        self.ip = 0;
         self.mem = self.data.clone();
     }
 
     #[inline]
-    pub fn patch(&mut self, addr: usize, value: usize) {
+    pub fn patch(&mut self, addr: usize, value: isize) {
         self.mem[addr] = value;
     }
 
-    pub fn run(&mut self) -> usize {
-        while OpCode::from(self.mem[self.pc]) != OpCode::Halt { Self::exec(self); }
+    pub fn run(&mut self) -> isize {
+        let mut op_code = OpCode::from(self.mem[self.ip]);
+        while op_code != Mneumonic::Halt {
+            self.ip = op_code.exec(self.ip, &mut self.mem);
+            op_code = OpCode::from(self.mem[self.ip]);
+        }
         self.mem[0]
     }
 
-    pub fn run_expect(&mut self, value: usize) -> Option<ExpectResult> {
+    pub fn run_expect(&mut self, value: isize) -> Option<ExpectResult> {
         let range = 0..=99;
         for noun in range.clone() {
             for verb in range.clone() {
@@ -56,46 +73,10 @@ impl IntcodeCPU {
         }
         None
     }
-
-    fn exec(&mut self) {
-        match OpCode::from(self.mem[self.pc]) {
-            OpCode::Add  => {
-                Self::load_operands(self);
-                self.mem[self.ds] = self.mem[self.r1] +
-                                    self.mem[self.r2];
-            },
-            OpCode::Mult => {
-                Self::load_operands(self);
-                self.mem[self.ds] = self.mem[self.r1] *
-                                    self.mem[self.r2];
-            },
-            _ => panic!("Invalid OpCode")
-        }
-    }
-
-    #[inline]
-    fn load_operands(&mut self) {
-        self.pc += 1; self.r1 = self.mem[self.pc];
-        self.pc += 1; self.r2 = self.mem[self.pc];
-        self.pc += 1; self.ds = self.mem[self.pc];
-        self.pc += 1;
-    }
-}
-
-impl From<usize> for OpCode {
-    fn from(item: usize) -> Self {
-        match item {
-            1  => OpCode::Add,
-            2  => OpCode::Mult,
-            99 => OpCode::Halt,
-            _ => panic!("Invalid OpCode")
-        }
-    }
 }
 
 impl fmt::Debug for IntcodeCPU {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "IntcodeCPU {{ pc: {}, r1: {}, r2: {}, ds: {} }}",
-               self.pc, self.r1, self.r2, self.ds)
+        write!(f, "IntcodeCPU {{ ip: {} }}", self.ip)
     }
 }
