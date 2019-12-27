@@ -12,27 +12,23 @@ class OpCode
   STOE = 8
   HALT = 99
 
-  attr_accessor :opcode, :operands, :modes, :size
+  attr_accessor :opcode, :modes, :size
 
-  def initialize(ip, mem)
-    @ip = ip
-    @mem = mem
-
-    @opcode, @modes = deconstruct_opcode(@mem[@ip])
+  def initialize(opcode)
+    @opcode, @modes = deconstruct_opcode(opcode)
     @size = op_size(@opcode)
-    @operands = read_operands(@size - 1) if size > 1
   end
 
-  def exec
+  def exec(ip, mem)
     case self
-    when ADD  then add_op
-    when MULT then mult_op
-    when IN   then input
-    when OUT  then output
-    when JNZ  then jump_if_true
-    when JZ   then jump_if_false
-    when STOL then store_if_less
-    when STOE then store_if_equal
+    when ADD  then add_op(ip, mem)
+    when MULT then mult_op(ip, mem)
+    when IN   then input(ip, mem)
+    when OUT  then output(ip, mem)
+    when JNZ  then jump_if_true(ip, mem)
+    when JZ   then jump_if_false(ip, mem)
+    when STOL then store_if_less(ip, mem)
+    when STOE then store_if_equal(ip, mem)
     end
   end
 
@@ -63,10 +59,10 @@ class OpCode
   end
 
   def enum_modes(code)
-    digits = code.digits
+    digits = (code / 100).digits
     size = digits.size
-    digits.fill(0, size, 5 - size) if size < 5
-    digits[2..4].collect do |i|
+    digits.fill(0, size, 3 - size) if size < 3
+    digits.collect do |i|
       case i
       when 0 then :mem
       when 1 then :imm
@@ -84,63 +80,64 @@ class OpCode
     end
   end
 
-  def read_operands(size)
-    @mem[@ip + 1, size]
+  def read_operands(ip, mem)
+    mem[ip + 1, size - 1]
   end
 
-  def add_op
+  def add_op(ip, mem)
     modes[2] = :imm
-    val1, val2, addr = load_operands
-    @mem[addr] = val1 + val2
-    @ip + size
+    val1, val2, addr = load_operands(ip, mem)
+    mem[addr] = val1 + val2
+    ip + size
   end
 
-  def mult_op
+  def mult_op(ip, mem)
     modes[2] = :imm
-    val1, val2, addr = load_operands
-    @mem[addr] = val1 * val2
-    @ip + size
+    val1, val2, addr = load_operands(ip, mem)
+    mem[addr] = val1 * val2
+    ip + size
   end
 
-  def input
+  def input(ip, mem)
     print '? '
     val = scanf('%d').first
-    @mem[operands[0]] = val
-    @ip + size
+    operand = read_operands(ip, mem).first
+    mem[operand] = val
+    ip + size
   end
 
-  def output
-    puts load_operands
-    @ip + size
+  def output(ip, mem)
+    puts load_operands(ip, mem).first
+    ip + size
   end
 
-  def jump_if_true
-    val, addr = load_operands
-    val.zero? ? @ip + size : addr
+  def jump_if_true(ip, mem)
+    val, addr = load_operands(ip, mem)
+    val.zero? ? ip + size : addr
   end
 
-  def jump_if_false
-    val, addr = load_operands
-    val.zero? ? addr : @ip + size
+  def jump_if_false(ip, mem)
+    val, addr = load_operands(ip, mem)
+    val.zero? ? addr : ip + size
   end
 
-  def store_if_less
+  def store_if_less(ip, mem)
     modes[2] = :imm
-    val1, val2, addr = load_operands
-    @mem[addr] = val1 < val2 ? 1 : 0
-    @ip + size
+    val1, val2, addr = load_operands(ip, mem)
+    mem[addr] = val1 < val2 ? 1 : 0
+    ip + size
   end
 
-  def store_if_equal
+  def store_if_equal(ip, mem)
     modes[2] = :imm
-    val1, val2, addr = load_operands
-    @mem[addr] = val1 == val2 ? 1 : 0
-    @ip + size
+    val1, val2, addr = load_operands(ip, mem)
+    mem[addr] = val1 == val2 ? 1 : 0
+    ip + size
   end
 
-  def load_operands
-    operands.zip(modes).collect do |val, mode|
-      mode == :mem ? @mem[val] : val
+  def load_operands(ip, mem)
+    read_operands(ip, mem).zip(modes).collect do |val, mode|
+      mode == :mem ? mem[val] : val
     end
   end
 end

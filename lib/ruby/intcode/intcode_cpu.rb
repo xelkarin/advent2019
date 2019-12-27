@@ -21,7 +21,11 @@ class IntcodeCPU
   end
 
   def run
-    while OpCode.new(@ip, @mem) != OpCode::HALT do; exec; end
+    opcode = OpCode.new(@mem[@ip])
+    while opcode != OpCode::HALT do
+      @ip = opcode.exec(@ip, @mem)
+      opcode = OpCode.new(@mem[@ip])
+    end
     @mem[0]
   end
 
@@ -45,10 +49,5 @@ class IntcodeCPU
 
   def read_file(file)
     file.read.strip.split(',').map(&:to_i)
-  end
-
-  def exec
-    opcode = OpCode.new(@ip, @mem)
-    @ip = opcode.exec
   end
 end
