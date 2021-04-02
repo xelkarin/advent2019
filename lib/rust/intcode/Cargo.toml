@@ -1,5 +1,5 @@
 [package]
 name = "intcode"
 version = "0.1.0"
-authors = ["Robert Gill <locke@sdf.lonestar.org>"]
+authors = ["Robert Gill <rtgill82@gmail.com>"]
 edition = "2018"
